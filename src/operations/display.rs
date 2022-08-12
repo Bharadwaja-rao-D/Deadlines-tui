@@ -110,6 +110,7 @@ pub fn ui<B: Backend>(frame: &mut Frame<B>, rx: &Receiver<Input>, render_info: &
             Input::Next => {
                 actual_render(frame, render_info);
             }
+            //TODO: Go to prev rendered page
             Input::Previous => {}
             Input::Nothing => {}
         }
