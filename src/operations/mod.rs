@@ -1,5 +1,6 @@
 pub mod display;
 pub mod fetch;
+pub mod info;
 use std::{collections::VecDeque, fs, path::PathBuf};
 
 use serde::{Deserialize, Serialize};

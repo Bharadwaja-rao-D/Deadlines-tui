@@ -1,11 +1,9 @@
 use std::{
-    collections::VecDeque,
     io::{self, stdout},
     path::PathBuf,
     sync::mpsc::{self, Receiver},
     thread,
     time::Duration,
-    vec,
 };
 
 use crossterm::{
@@ -16,18 +14,17 @@ use crossterm::{
 //use log::info;
 use tui::{
     backend::{Backend, CrosstermBackend},
-    layout::Rect,
-    layout::{Constraint, Direction, Layout},
     widgets::{Block, Borders, Paragraph},
     Frame, Terminal,
 };
 
-use super::{get_deadlines, Deadline};
+use super::info::RenderInfo;
 
 pub const TICK: u64 = 500;
-pub const VISIBLE: usize = 5;
+pub const VISIBLE: usize = 4;
 
 pub fn display(file: &PathBuf) {
+    //Offs options of the current terminal
     enable_raw_mode().expect("Raw mode enable failed");
     let mut stdout = stdout();
     execute!(stdout, EnableMouseCapture, EnterAlternateScreen).unwrap();
@@ -37,6 +34,7 @@ pub fn display(file: &PathBuf) {
     //Write the render loop here
     render(&mut terminal, file).unwrap();
 
+    //Turns on the default terminal things
     disable_raw_mode().expect("Raw mode enable failed");
     execute!(
         terminal.backend_mut(),
@@ -56,6 +54,7 @@ pub enum Input {
 pub fn render<B: Backend>(terminal: &mut Terminal<B>, file: &PathBuf) -> io::Result<()> {
     let (tx, rx) = mpsc::channel();
     let size = terminal.size().unwrap();
+    //Contains the deadlines to be rendered an the layout chunks on which it should be rendered.
     let mut render_info = RenderInfo::new(size, file);
 
     //Initial rendering
@@ -64,7 +63,7 @@ pub fn render<B: Backend>(terminal: &mut Terminal<B>, file: &PathBuf) -> io::Res
     loop {
         terminal.draw(|f| ui(f, &rx, &mut render_info))?;
 
-        //TODO: Multithreading to seperate this
+        //Captures the input and sends it via channel
         if let Event::Key(input) = event::read()? {
             if KeyCode::Char('q') == input.code {
                 return Ok(());
@@ -77,29 +76,8 @@ pub fn render<B: Backend>(terminal: &mut Terminal<B>, file: &PathBuf) -> io::Res
             }
         }
 
+        //MISTAKE: If you click when it is here then there will be no change
         thread::sleep(Duration::from_millis(TICK));
-    }
-}
-
-pub struct RenderInfo {
-    pub visible_deadlines: VisibleDeadlines,
-    pub chunks: Vec<Rect>,
-}
-
-impl RenderInfo {
-    pub fn new(size: Rect, file: &PathBuf) -> Self {
-        let visible_deadlines = VisibleDeadlines::new(file);
-        let percent = (100 / visible_deadlines.visible_number).try_into().unwrap();
-        let constraints = vec![Constraint::Percentage(percent); VISIBLE];
-        let chunks = Layout::default()
-            .direction(Direction::Vertical)
-            .constraints(constraints.as_ref())
-            .split(size); //splits the given area into the smaller required areas
-
-        return Self {
-            visible_deadlines,
-            chunks,
-        };
     }
 }
 
@@ -140,45 +118,5 @@ pub fn actual_render<B: Backend>(frame: &mut Frame<B>, render_info: &mut RenderI
         let block = Block::default().borders(Borders::ALL).title("End");
         let paragraph = Paragraph::new("\n\nPress q to exit the application.").block(block);
         frame.render_widget(paragraph, frame.size());
-    }
-}
-
-pub struct VisibleDeadlines {
-    pub all_deadlines: VecDeque<Deadline>,
-    pub visible_number: usize,
-}
-
-impl VisibleDeadlines {
-    pub fn new(file: &PathBuf) -> Self {
-        let all_deadlines = get_deadlines(file).deadlines;
-        let visible_number = std::cmp::min(all_deadlines.len(), VISIBLE);
-        return Self {
-            all_deadlines,
-            visible_number,
-        };
-    }
-}
-
-impl Iterator for VisibleDeadlines {
-    type Item = Vec<Deadline>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let len = self.all_deadlines.len();
-        if len == 0 {
-            return None;
-        }
-        let mut visible_deadlines = Vec::new();
-
-        self.visible_number = std::cmp::min(VISIBLE, len);
-        for _ in 0..self.visible_number {
-            if let Some(deadline) = self.all_deadlines.pop_back() {
-                visible_deadlines.push(deadline);
-            } else {
-                //Theoretically this case should not come
-                return None;
-            }
-        }
-
-        return Some(visible_deadlines);
     }
 }
