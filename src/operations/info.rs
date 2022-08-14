@@ -1,9 +1,9 @@
 use super::{display::VISIBLE, get_deadlines, Deadline};
-use std::{collections::VecDeque, path::PathBuf};
+use std::path::PathBuf;
 use tui::layout::{Constraint, Direction, Layout, Rect};
 
 pub struct VisibleDeadlines {
-    pub all_deadlines: VecDeque<Deadline>,
+    pub all_deadlines: Vec<Deadline>,
     pub visible_number: usize,
 }
 
@@ -30,7 +30,7 @@ impl Iterator for VisibleDeadlines {
         self.visible_number = std::cmp::min(VISIBLE, len);
         let mut visible_deadlines = Vec::with_capacity(self.visible_number);
         for _ in 0..self.visible_number {
-            if let Some(deadline) = self.all_deadlines.pop_back() {
+            if let Some(deadline) = self.all_deadlines.pop() {
                 visible_deadlines.push(deadline);
             } else {
                 //Theoretically this case should not come

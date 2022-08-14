@@ -1,8 +1,9 @@
 pub mod display;
 pub mod fetch;
 pub mod info;
-use std::{collections::VecDeque, fs, path::PathBuf};
+use std::{fs, path::PathBuf, str::FromStr};
 
+use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 
 use crate::opts::Args;
@@ -21,14 +22,15 @@ pub struct Deadline {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Info {
-    pub deadlines: VecDeque<Deadline>,
+    pub deadlines: Vec<Deadline>,
 }
 
 impl TryFrom<&str> for Deadline {
     type Error = serde_json::Error;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
-        return Ok(serde_json::from_str(value)?);
+        let deadline = serde_json::from_str(value)?;
+        return Ok(deadline);
     }
 }
 
@@ -53,7 +55,7 @@ pub fn add(args: Args) {
     //Add this struct into AllDeadlines obj in the args.deadline_file
 
     let mut info_struct: Info = get_deadlines(&args.deadlines_file);
-    info_struct.deadlines.push_back(deadline);
+    info_struct.deadlines.push(deadline);
     let info = serde_json::to_string(&info_struct).unwrap();
 
     fs::write(&args.deadlines_file, info).unwrap();
@@ -61,13 +63,21 @@ pub fn add(args: Args) {
 
 pub fn get_deadlines(file: &PathBuf) -> Info {
     let info = fs::read_to_string(file).unwrap();
-    let info_struct;
+    let mut info_struct: Info;
     if info.len() > 0 {
         info_struct = serde_json::from_str(&info).unwrap();
+
+        //Sorting based on the nearest deadline
+        info_struct.deadlines.sort_by(|a, b| {
+            let date1 = NaiveDate::from_str(&a.date).unwrap();
+            let date2 = NaiveDate::from_str(&b.date).unwrap();
+
+            date2.cmp(&date1)
+        })
     } else {
         //create a Info struct and insert it
         info_struct = Info {
-            deadlines: VecDeque::new(),
+            deadlines: Vec::new(),
         };
     }
 

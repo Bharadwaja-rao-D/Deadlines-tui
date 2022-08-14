@@ -1,11 +1,13 @@
 use std::{
     io::{self, stdout},
     path::PathBuf,
+    str::FromStr,
     sync::mpsc::{self, Receiver},
     thread,
     time::Duration,
 };
 
+use chrono::{Datelike, NaiveDate};
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
     execute,
@@ -14,11 +16,12 @@ use crossterm::{
 //use log::info;
 use tui::{
     backend::{Backend, CrosstermBackend},
+    style::{Color, Style},
     widgets::{Block, Borders, Paragraph},
     Frame, Terminal,
 };
 
-use super::info::RenderInfo;
+use super::{info::RenderInfo, Deadline};
 
 pub const TICK: u64 = 500;
 pub const VISIBLE: usize = 4;
@@ -95,22 +98,42 @@ pub fn ui<B: Backend>(frame: &mut Frame<B>, rx: &Receiver<Input>, render_info: &
     }
 }
 
+fn construct_block(deadline: Deadline) -> Paragraph<'static> {
+    let mut nearer = false;
+
+    //if deadline.date is less than one day then make borders red
+    let date_now = chrono::offset::Local::now();
+    let date_now = date_now.naive_local().ordinal();
+    let date_deadline = NaiveDate::from_str(&deadline.date).unwrap().ordinal();
+
+    let diff = date_deadline.abs_diff(date_now);
+    if diff <= 1 {
+        nearer = true;
+    }
+
+    let mut block = Block::default()
+        .title(format!("{}", deadline.course))
+        .borders(Borders::ALL);
+
+    if nearer {
+        block = block.border_style(Style::default().fg(Color::Red));
+    }
+
+    let paragraph = Paragraph::new(format!(
+        "Course: {}\nAssignment: {}\nDeadline: {}",
+        deadline.course, deadline.assignment, deadline.date
+    ))
+    .block(block);
+
+    return paragraph;
+}
 ///Creates the block, paragraph and renders them
 pub fn actual_render<B: Backend>(frame: &mut Frame<B>, render_info: &mut RenderInfo) {
     let visible_deadlines = &mut render_info.visible_deadlines;
     let chunks = &render_info.chunks;
     if let Some(deadlines) = visible_deadlines.next() {
         for (i, deadline) in deadlines.into_iter().enumerate() {
-            let block = Block::default()
-                .title(format!("{}", deadline.course))
-                .borders(Borders::ALL);
-
-            let paragraph = Paragraph::new(format!(
-                "Course: {}\nAssignment: {}\nDeadline: {}",
-                deadline.course, deadline.assignment, deadline.date
-            ))
-            .block(block);
-
+            let paragraph = construct_block(deadline);
             frame.render_widget(paragraph, chunks[i])
         }
     } else {
