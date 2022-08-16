@@ -100,6 +100,7 @@ pub fn ui<B: Backend>(frame: &mut Frame<B>, rx: &Receiver<Input>, render_info: &
 
 fn construct_block(deadline: Deadline) -> Paragraph<'static> {
     let mut nearer = false;
+    let mut completed = false;
 
     //if deadline.date is less than one day then make borders red
     let date_now = chrono::offset::Local::now();
@@ -107,7 +108,9 @@ fn construct_block(deadline: Deadline) -> Paragraph<'static> {
     let date_deadline = NaiveDate::from_str(&deadline.date).unwrap().ordinal();
 
     let diff = date_deadline.abs_diff(date_now);
-    if diff <= 1 {
+    if date_deadline < date_now {
+        completed = true;
+    } else if diff <= 1 {
         nearer = true;
     }
 
@@ -115,8 +118,10 @@ fn construct_block(deadline: Deadline) -> Paragraph<'static> {
         .title(format!("{}", deadline.course))
         .borders(Borders::ALL);
 
-    if nearer {
+    if completed {
         block = block.border_style(Style::default().fg(Color::Red));
+    } else if nearer {
+        block = block.border_style(Style::default().fg(Color::Blue));
     }
 
     let paragraph = Paragraph::new(format!(
