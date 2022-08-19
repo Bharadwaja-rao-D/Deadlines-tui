@@ -132,7 +132,8 @@ fn construct_block(deadline: Deadline) -> Paragraph<'static> {
 
     return paragraph;
 }
-///Creates the block, paragraph and renders them
+
+//Creates the block, paragraph and renders them
 pub fn actual_render<B: Backend>(frame: &mut Frame<B>, render_info: &mut RenderInfo) {
     let visible_deadlines = &mut render_info.visible_deadlines;
     let chunks = &render_info.chunks;
