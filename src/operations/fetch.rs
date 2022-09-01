@@ -1,27 +1,36 @@
 //TODO: Uses gclassroom apis to fetch deadlines
 
-use std::env;
+use std::fs;
 
-use oauth2::{basic::BasicClient, AuthUrl, Client, ClientId, ClientSecret, TokenUrl};
+use oauth2::basic::BasicClient;
+use serde::{Deserialize, Serialize};
 
-use super::Info;
+use crate::operations::Info;
 
-pub fn authenticate() {
-    dotenv::dotenv().ok();
-    let client_id = ClientId::new(env::var("CLIENT_ID").expect("Not found in env"));
-    let client_secret = ClientSecret::new(env::var("CLIENT_ID").expect("Not found in env"));
-    let auth_url =
-        AuthUrl::new("https://accounts.google.com/o/oauth2/auth".to_string()).expect("Invalid url");
-    let token_url =
-        TokenUrl::new("https://oauth2.googleapis.com/token".to_string()).expect("Invalid url");
-
-    let client: BasicClient =
-        Client::new(client_id, Some(client_secret), auth_url, Some(token_url));
-
-    println!("{:?}", client);
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Credentials {
+    client_id: String,
+    project_id: String,
+    auth_uri: String,
+    token_uri: String,
+    auth_provider_x509_cert_url: String,
+    client_secret: String,
+    redirect_uris: Vec<String>,
 }
 
 pub fn fetch_deadlines() -> Option<Info> {
-    authenticate();
+    let info = fs::read_to_string("credentials.json").unwrap();
+    let info: Credentials = serde_json::from_str(&info).unwrap();
+
+    let url = &info.redirect_uris[0];
+
+    let client = BasicClient::new(
+        oauth2::ClientId::new(info.client_id),
+        Some(oauth2::ClientSecret::new(info.client_secret)),
+        oauth2::AuthUrl::new(info.auth_uri).unwrap(),
+        Some(oauth2::TokenUrl::new(info.token_uri).unwrap()),
+    )
+    .set_redirect_uri(oauth2::RedirectUrl::new(url.to_string()).unwrap());
+
     return None;
 }

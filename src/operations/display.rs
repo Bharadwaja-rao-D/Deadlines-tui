@@ -118,6 +118,7 @@ fn construct_block(deadline: Deadline) -> Paragraph<'static> {
         .title(format!("{}", deadline.course))
         .borders(Borders::ALL);
 
+    //TODO: Find a way to remove the completed things
     if completed {
         block = block.border_style(Style::default().fg(Color::Red));
     } else if nearer {
@@ -132,10 +133,13 @@ fn construct_block(deadline: Deadline) -> Paragraph<'static> {
 
     return paragraph;
 }
-///Creates the block, paragraph and renders them
+
+//Creates the block, paragraph and renders them
 pub fn actual_render<B: Backend>(frame: &mut Frame<B>, render_info: &mut RenderInfo) {
     let visible_deadlines = &mut render_info.visible_deadlines;
     let chunks = &render_info.chunks;
+    //Constructed a custom iterator for visible_deadlines which returns a batch of deadlines based
+    //on the value of VISIBLE
     if let Some(deadlines) = visible_deadlines.next() {
         for (i, deadline) in deadlines.into_iter().enumerate() {
             let paragraph = construct_block(deadline);
