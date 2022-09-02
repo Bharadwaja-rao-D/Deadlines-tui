@@ -122,7 +122,7 @@ fn construct_block(deadline: Deadline) -> Paragraph<'static> {
     if completed {
         block = block.border_style(Style::default().fg(Color::Red));
     } else if nearer {
-        block = block.border_style(Style::default().fg(Color::Blue));
+        block = block.border_style(Style::default().fg(Color::Rgb(247, 122, 5)));
     }
 
     let paragraph = Paragraph::new(format!(

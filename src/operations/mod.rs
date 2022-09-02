@@ -1,5 +1,4 @@
 pub mod display;
-pub mod fetch;
 pub mod info;
 use std::{fs, path::PathBuf, str::FromStr};
 
