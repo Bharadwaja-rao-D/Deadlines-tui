@@ -50,7 +50,12 @@ pub struct RenderInfo {
 impl RenderInfo {
     pub fn new(size: Rect, file: &PathBuf) -> Self {
         let visible_deadlines = VisibleDeadlines::new(file);
-        let percent = (100 / visible_deadlines.visible_number).try_into().unwrap();
+        let percent: u16;
+        if visible_deadlines.visible_number == 0 {
+            percent = 100;
+        } else {
+            percent = (100 / visible_deadlines.visible_number).try_into().unwrap()
+        };
         let constraints = vec![Constraint::Percentage(percent); VISIBLE];
         let chunks = Layout::default()
             .direction(Direction::Vertical)

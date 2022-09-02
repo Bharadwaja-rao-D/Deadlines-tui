@@ -29,7 +29,7 @@ pub struct Args {
     pub deadlines_file: PathBuf,
 }
 
-fn get_file(file: &PathBuf) -> Result<PathBuf, io::Error> {
+pub fn get_file(file: &PathBuf) -> Result<PathBuf, io::Error> {
     if file.exists() {
         return Ok(file.to_path_buf());
     } else {
@@ -38,10 +38,10 @@ fn get_file(file: &PathBuf) -> Result<PathBuf, io::Error> {
     }
 }
 
-impl TryFrom<Opts> for Args {
+impl TryFrom<&Opts> for Args {
     type Error = io::Error;
 
-    fn try_from(value: Opts) -> Result<Self, Self::Error> {
+    fn try_from(value: &Opts) -> Result<Self, Self::Error> {
         let deadline = value.deadline.clone().unwrap();
         let course = value.course.clone().unwrap();
         let assignment = value.assignment.clone().unwrap();

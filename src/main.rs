@@ -1,6 +1,6 @@
 use deadlines::{
     operations,
-    opts::{Args, Opts},
+    opts::{get_file, Args, Opts},
 };
 use structopt::StructOpt;
 
@@ -9,9 +9,9 @@ fn main() {
 
     let opts: Opts = Opts::from_args();
     if opts.add {
-        let args: Args = opts.try_into().unwrap();
+        let args: Args = TryFrom::try_from(&opts).unwrap();
         operations::add(args);
     } else {
-        operations::display::display(&opts.deadlines_file);
+        operations::display::display(&get_file(&opts.deadlines_file).expect("File opening error"));
     }
 }
